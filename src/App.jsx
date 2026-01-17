@@ -1,18 +1,73 @@
-import React, { useState, useCallback, useEffect, useRef } from 'react';
-import ReactFlow, { Background, Controls, Panel, applyEdgeChanges, applyNodeChanges, addEdge, useReactFlow, ReactFlowProvider } from 'reactflow';
+import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react';
+import ReactFlow, { 
+  Background, 
+  Controls, 
+  Panel, 
+  applyEdgeChanges, 
+  applyNodeChanges, 
+  addEdge, 
+  useReactFlow, 
+  ReactFlowProvider,
+  getBezierPath,
+  BaseEdge
+} from 'reactflow';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Beaker, Cpu, Zap, Layers, RotateCcw, Shield, BarChart3, Activity } from 'lucide-react';
 import 'reactflow/dist/style.css';
 
+// --- THEME & STYLES ---
 const theme = {
   bg: '#020617',
   sidebar: '#070a13',
   accent: '#2DD4BF',
   card: '#0f172a',
-  border: '#1e293b'
+  border: '#1e293b',
+  stream: '#2DD4BF' // Color of the data particles
 };
 
-const NODE_TYPES = [
+// Inject CSS for the stream animation directly
+const styleSheet = document.createElement("style");
+styleSheet.type = "text/css";
+styleSheet.innerText = `
+  @keyframes dashdraw {
+    from { stroke-dashoffset: 50; }
+    to { stroke-dashoffset: 0; }
+  }
+  .quantum-stream {
+    animation: dashdraw 0.8s linear infinite;
+  }
+`;
+document.head.appendChild(styleSheet);
+
+// --- CUSTOM EDGE COMPONENT ---
+// This draws a base line AND an animated dashed line on top
+const QuantumDataEdge = ({ id, sourceX, sourceY, targetX, targetY, sourcePosition, targetPosition, style = {}, markerEnd, data }) => {
+  const [edgePath] = getBezierPath({ sourceX, sourceY, sourcePosition, targetX, targetY, targetPosition });
+  const isAnimating = data?.isAnimating;
+
+  return (
+    <>
+      {/* Base structural line (darker) */}
+      <BaseEdge path={edgePath} markerEnd={markerEnd} style={{ ...style, strokeWidth: 1, stroke: theme.border }} />
+      
+      {/* Animated data stream overlay (only shows when deploying) */}
+      {isAnimating && (
+        <BaseEdge 
+          path={edgePath} 
+          style={{ 
+            strokeWidth: 3, 
+            stroke: theme.stream, 
+            strokeDasharray: "5 15", // Creates the "particles"
+            opacity: 0.8 
+          }} 
+          className="quantum-stream" // Applies the CSS animation
+        />
+      )}
+    </>
+  );
+};
+
+const NODE_TYPES_CONFIG = [
   { id: 'q-gate', label: '5-Qubit Gate', color: '#3B82F6', icon: <Layers size={14}/> },
   { id: 'op', label: 'Add Operator', color: '#8B5CF6', icon: <Zap size={14}/> },
   { id: 'shaper', label: 'Q-Shaper', color: '#EC4899', icon: <Cpu size={14}/> },
@@ -27,6 +82,12 @@ const AlphaParadoxQC = () => {
   const [probs, setProbs] = useState([60, 40, 90, 30, 70, 20, 50, 85]);
   const { project } = useReactFlow();
 
+  // Register custom edge type
+  const edgeTypes = useMemo(() => ({ quantum: QuantumDataEdge }), []);
+
+  // --- ANIMATION & STATE LOGIC ---
+  
+  // 1. Probability bar jitter
   useEffect(() => {
     const interval = setInterval(() => {
       setProbs(prev => prev.map(() => isDeploying ? Math.random() * 90 + 10 : Math.max(10, Math.min(100, Math.random() * 100))));
@@ -34,9 +95,22 @@ const AlphaParadoxQC = () => {
     return () => clearInterval(interval);
   }, [isDeploying]);
 
+  // 2. Update edges when deployment state changes to trigger animation
+  useEffect(() => {
+    setEdges((eds) => 
+      eds.map((e) => ({
+        ...e,
+        data: { ...e.data, isAnimating: isDeploying }, // Pass state to custom edge
+        animated: !isDeploying // Use default slow animation when idle
+      }))
+    );
+  }, [isDeploying]);
+
   const onNodesChange = useCallback((chs) => setNodes((nds) => applyNodeChanges(chs, nds)), []);
   const onEdgesChange = useCallback((chs) => setEdges((eds) => applyEdgeChanges(chs, eds)), []);
-  const onConnect = useCallback((p) => setEdges((eds) => addEdge({ ...p, animated: true, style: { stroke: theme.accent } }, eds)), []);
+  
+  // Connect using custom 'quantum' type
+  const onConnect = useCallback((p) => setEdges((eds) => addEdge({ ...p, type: 'quantum', data: { isAnimating: isDeploying } }, eds)), [isDeploying]);
 
   const onDrop = (event) => {
     event.preventDefault();
@@ -60,19 +134,22 @@ const AlphaParadoxQC = () => {
           <span style={{ fontWeight: 'bold', letterSpacing: '1px' }}>ALPHA PARADOX QC</span>
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-          {NODE_TYPES.map(n => (
+          {NODE_TYPES_CONFIG.map(n => (
             <div key={n.id} draggable onDragStart={(e) => e.dataTransfer.setData('application/reactflow', JSON.stringify({ label: n.label, color: n.color }))} style={{ padding: '12px', background: theme.card, border: '1px solid #1e293b', borderRadius: '6px', fontSize: '12px', cursor: 'grab', display: 'flex', alignItems: 'center', gap: '10px' }}>
               <div style={{ color: n.color }}>{n.icon}</div> {n.label}
             </div>
           ))}
         </div>
-        <button onClick={() => setNodes([{ id: '1', type: 'input', data: { label: 'Quantum Core' }, position: { x: 250, y: 50 }, style: { background: theme.accent, color: '#000', fontWeight: 'bold', border: 'none' } }])} style={{ marginTop: 'auto', background: 'transparent', border: '1px solid #1e293b', color: '#4b5563', padding: '10px', borderRadius: '6px', cursor: 'pointer', fontSize: '10px' }}>
+        <button onClick={() => { setNodes([{ id: '1', type: 'input', data: { label: 'Quantum Core' }, position: { x: 250, y: 50 }, style: { background: theme.accent, color: '#000', fontWeight: 'bold', border: 'none' } }]); setEdges([]); }} style={{ marginTop: 'auto', background: 'transparent', border: '1px solid #1e293b', color: '#4b5563', padding: '10px', borderRadius: '6px', cursor: 'pointer', fontSize: '10px' }}>
           <RotateCcw size={12} /> RESET WORKSPACE
         </button>
       </aside>
 
       <main ref={reactFlowWrapper} style={{ flex: 1, position: 'relative' }}>
-        <ReactFlow nodes={nodes} edges={edges} onNodesChange={onNodesChange} onEdgesChange={onEdgesChange} onConnect={onConnect} onDrop={onDrop} onDragOver={(e) => e.preventDefault()} fitView>
+        <ReactFlow 
+          nodes={nodes} edges={edges} edgeTypes={edgeTypes}
+          onNodesChange={onNodesChange} onEdgesChange={onEdgesChange} onConnect={onConnect} onDrop={onDrop} onDragOver={(e) => e.preventDefault()} fitView
+        >
           <Background color="#1e293b" gap={25} />
           <Controls />
           <Panel position="bottom-center" style={{ marginBottom: '20px' }}>
