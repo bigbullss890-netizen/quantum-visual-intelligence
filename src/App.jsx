@@ -1,191 +1,158 @@
-import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react';
-import ReactFlow, { 
-  Background, 
-  Controls, 
-  Panel, 
-  applyEdgeChanges, 
-  applyNodeChanges, 
-  addEdge, 
-  useReactFlow, 
-  ReactFlowProvider,
-  getBezierPath,
-  BaseEdge
-} from 'reactflow';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Beaker, Cpu, Zap, Layers, RotateCcw, Shield, BarChart3, Activity } from 'lucide-react';
+import React, { useState, useCallback, useRef } from 'react';
+import {
+  Header, HeaderName, HeaderGlobalBar, HeaderGlobalAction,
+  SideNav, SideNavItems, SideNavLink,
+  Theme, Tile, Button, Grid, Column,
+  Tabs, Tab, TabList, TabPanels, TabPanel,
+  Loading, CodeSnippet
+} from '@carbon/react';
+import { LogoGithub, UserAvatar, Dashboard, Code, Gateway, PlayFilledAlt, Terminal } from '@carbon/icons-react';
+import Editor from '@monaco-editor/react';
+import ReactFlow, { Background, Controls, useNodesState, useEdgesState, addEdge } from 'reactflow';
 import 'reactflow/dist/style.css';
+import { QuantumSimulator } from './QuantumEngine'; // Importing our Custom Backend
 
-// --- THEME & STYLES ---
-const theme = {
-  bg: '#020617',
-  sidebar: '#070a13',
-  accent: '#2DD4BF',
-  card: '#0f172a',
-  border: '#1e293b',
-  stream: '#2DD4BF' // Color of the data particles
-};
+// --- CARBON STYLE NODE ---
+const GateNode = ({ data }) => (
+  <Tile style={{ 
+    width: '60px', height: '60px', padding: 0, 
+    display: 'flex', alignItems: 'center', justifyContent: 'center', 
+    background: '#393939', border: '1px solid #525252' 
+  }}>
+    <span style={{ color: '#A8A8A8', fontWeight: 'bold', fontSize: '14px' }}>{data.label}</span>
+  </Tile>
+);
+const nodeTypes = { gate: GateNode };
 
-// Inject CSS for the stream animation directly
-const styleSheet = document.createElement("style");
-styleSheet.type = "text/css";
-styleSheet.innerText = `
-  @keyframes dashdraw {
-    from { stroke-dashoffset: 50; }
-    to { stroke-dashoffset: 0; }
-  }
-  .quantum-stream {
-    animation: dashdraw 0.8s linear infinite;
-  }
-`;
-document.head.appendChild(styleSheet);
+export default function App() {
+  // State
+  const [nodes, setNodes, onNodesChange] = useNodesState([
+    { id: 'q0', type: 'input', data: { label: 'q[0]' }, position: { x: 50, y: 100 }, draggable: false, style: { background: 'transparent', border: 'none', color: 'white' } },
+    { id: 'gate1', type: 'gate', data: { label: 'H', type: 'gate' }, position: { x: 150, y: 80 } },
+  ]);
+  const [edges, setEdges, onEdgesChange] = useEdgesState([]);
+  const [activeTab, setActiveTab] = useState(0);
+  const [isRunning, setIsRunning] = useState(false);
+  const [result, setResult] = useState(null);
+  const simulator = useRef(new QuantumSimulator(2));
 
-// --- CUSTOM EDGE COMPONENT ---
-// This draws a base line AND an animated dashed line on top
-const QuantumDataEdge = ({ id, sourceX, sourceY, targetX, targetY, sourcePosition, targetPosition, style = {}, markerEnd, data }) => {
-  const [edgePath] = getBezierPath({ sourceX, sourceY, sourcePosition, targetX, targetY, targetPosition });
-  const isAnimating = data?.isAnimating;
+  // Handlers
+  const onConnect = useCallback((params) => setEdges((eds) => addEdge(params, eds)), []);
 
-  return (
-    <>
-      {/* Base structural line (darker) */}
-      <BaseEdge path={edgePath} markerEnd={markerEnd} style={{ ...style, strokeWidth: 1, stroke: theme.border }} />
-      
-      {/* Animated data stream overlay (only shows when deploying) */}
-      {isAnimating && (
-        <BaseEdge 
-          path={edgePath} 
-          style={{ 
-            strokeWidth: 3, 
-            stroke: theme.stream, 
-            strokeDasharray: "5 15", // Creates the "particles"
-            opacity: 0.8 
-          }} 
-          className="quantum-stream" // Applies the CSS animation
-        />
-      )}
-    </>
-  );
-};
+  const handleRun = () => {
+    setIsRunning(true);
+    setResult(null);
 
-const NODE_TYPES_CONFIG = [
-  { id: 'q-gate', label: '5-Qubit Gate', color: '#3B82F6', icon: <Layers size={14}/> },
-  { id: 'op', label: 'Add Operator', color: '#8B5CF6', icon: <Zap size={14}/> },
-  { id: 'shaper', label: 'Q-Shaper', color: '#EC4899', icon: <Cpu size={14}/> },
-  { id: 'mol', label: 'Target Molecule', color: '#10B981', icon: <Beaker size={14}/> },
-];
-
-const AlphaParadoxQC = () => {
-  const reactFlowWrapper = useRef(null);
-  const [nodes, setNodes] = useState([{ id: '1', type: 'input', data: { label: 'Quantum Core' }, position: { x: 250, y: 50 }, style: { background: theme.accent, color: '#000', fontWeight: 'bold', border: 'none' } }]);
-  const [edges, setEdges] = useState([]);
-  const [isDeploying, setIsDeploying] = useState(false);
-  const [probs, setProbs] = useState([60, 40, 90, 30, 70, 20, 50, 85]);
-  const { project } = useReactFlow();
-
-  // Register custom edge type
-  const edgeTypes = useMemo(() => ({ quantum: QuantumDataEdge }), []);
-
-  // --- ANIMATION & STATE LOGIC ---
-  
-  // 1. Probability bar jitter
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setProbs(prev => prev.map(() => isDeploying ? Math.random() * 90 + 10 : Math.max(10, Math.min(100, Math.random() * 100))));
-    }, isDeploying ? 100 : 800);
-    return () => clearInterval(interval);
-  }, [isDeploying]);
-
-  // 2. Update edges when deployment state changes to trigger animation
-  useEffect(() => {
-    setEdges((eds) => 
-      eds.map((e) => ({
-        ...e,
-        data: { ...e.data, isAnimating: isDeploying }, // Pass state to custom edge
-        animated: !isDeploying // Use default slow animation when idle
-      }))
-    );
-  }, [isDeploying]);
-
-  const onNodesChange = useCallback((chs) => setNodes((nds) => applyNodeChanges(chs, nds)), []);
-  const onEdgesChange = useCallback((chs) => setEdges((eds) => applyEdgeChanges(chs, eds)), []);
-  
-  // Connect using custom 'quantum' type
-  const onConnect = useCallback((p) => setEdges((eds) => addEdge({ ...p, type: 'quantum', data: { isAnimating: isDeploying } }, eds)), [isDeploying]);
-
-  const onDrop = (event) => {
-    event.preventDefault();
-    const data = JSON.parse(event.dataTransfer.getData('application/reactflow'));
-    const bounds = reactFlowWrapper.current.getBoundingClientRect();
-    const position = project({ x: event.clientX - bounds.left, y: event.clientY - bounds.top });
-    const newNode = {
-      id: Math.random().toString(),
-      position,
-      data: { label: data.label },
-      style: { background: '#111827', color: '#fff', border: `1px solid ${data.color}`, borderRadius: '6px', fontSize: '11px', padding: '10px' }
-    };
-    setNodes((nds) => nds.concat(newNode));
+    // Call our Custom Backend Engine
+    setTimeout(() => {
+      const data = simulator.current.run(nodes);
+      setResult(data);
+      setIsRunning(false);
+    }, 1500); // Fake network latency for realism
   };
 
   return (
-    <div style={{ width: '100vw', height: '100vh', display: 'flex', background: theme.bg, color: '#fff', fontFamily: 'monospace' }}>
-      <aside style={{ width: '260px', background: theme.sidebar, borderRight: `1px solid ${theme.border}`, padding: '20px', display: 'flex', flexDirection: 'column' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '30px' }}>
-          <Shield size={20} color={theme.accent} />
-          <span style={{ fontWeight: 'bold', letterSpacing: '1px' }}>ALPHA PARADOX QC</span>
-        </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-          {NODE_TYPES_CONFIG.map(n => (
-            <div key={n.id} draggable onDragStart={(e) => e.dataTransfer.setData('application/reactflow', JSON.stringify({ label: n.label, color: n.color }))} style={{ padding: '12px', background: theme.card, border: '1px solid #1e293b', borderRadius: '6px', fontSize: '12px', cursor: 'grab', display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <div style={{ color: n.color }}>{n.icon}</div> {n.label}
-            </div>
-          ))}
-        </div>
-        <button onClick={() => { setNodes([{ id: '1', type: 'input', data: { label: 'Quantum Core' }, position: { x: 250, y: 50 }, style: { background: theme.accent, color: '#000', fontWeight: 'bold', border: 'none' } }]); setEdges([]); }} style={{ marginTop: 'auto', background: 'transparent', border: '1px solid #1e293b', color: '#4b5563', padding: '10px', borderRadius: '6px', cursor: 'pointer', fontSize: '10px' }}>
-          <RotateCcw size={12} /> RESET WORKSPACE
-        </button>
-      </aside>
+    <Theme theme="g100">
+      <div style={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
+        
+        {/* 1. IBM GLOBAL HEADER */}
+        <Header aria-label="IBM Quantum">
+          <HeaderName href="#" prefix="IBM">Quantum Platform</HeaderName>
+          <HeaderGlobalBar>
+            <HeaderGlobalAction><Terminal size={20} /></HeaderGlobalAction>
+            <HeaderGlobalAction><UserAvatar size={20} /></HeaderGlobalAction>
+          </HeaderGlobalBar>
+        </Header>
 
-      <main ref={reactFlowWrapper} style={{ flex: 1, position: 'relative' }}>
-        <ReactFlow 
-          nodes={nodes} edges={edges} edgeTypes={edgeTypes}
-          onNodesChange={onNodesChange} onEdgesChange={onEdgesChange} onConnect={onConnect} onDrop={onDrop} onDragOver={(e) => e.preventDefault()} fitView
-        >
-          <Background color="#1e293b" gap={25} />
-          <Controls />
-          <Panel position="bottom-center" style={{ marginBottom: '20px' }}>
-            <div style={{ background: 'rgba(2,6,23,0.8)', border: '1px solid #1e293b', padding: '15px', borderRadius: '12px', width: '350px' }}>
-              <div style={{ height: '50px', display: 'flex', alignItems: 'end', gap: '3px' }}>
-                {probs.map((h, i) => ( <div key={i} style={{ flex: 1, height: `${h}%`, background: isDeploying ? theme.accent : '#3b82f6', borderRadius: '1px', transition: 'height 0.2s' }} /> ))}
+        <div style={{ display: 'flex', flex: 1, marginTop: '48px' }}>
+          
+          {/* 2. SIDE NAVIGATION */}
+          <SideNav isFixedNav expanded aria-label="Side navigation">
+            <SideNavItems>
+              <SideNavLink renderIcon={Dashboard} onClick={() => setActiveTab(0)} isActive={activeTab === 0}>Dashboard</SideNavLink>
+              <SideNavLink renderIcon={Gateway} onClick={() => setActiveTab(1)} isActive={activeTab === 1}>Composer</SideNavLink>
+              <SideNavLink renderIcon={Code} onClick={() => setActiveTab(2)} isActive={activeTab === 2}>Lab (IDE)</SideNavLink>
+            </SideNavItems>
+          </SideNav>
+
+          {/* 3. MAIN CONTENT AREA */}
+          <main style={{ flex: 1, background: '#161616', padding: '1rem', marginLeft: '16rem' }}>
+            {activeTab === 1 ? (
+              <Grid fullWidth>
+                {/* TOP BAR: ACTIONS */}
+                <Column lg={16} style={{ marginBottom: '1rem', display: 'flex', justifyContent: 'space-between' }}>
+                  <h2 style={{ color: 'white', fontWeight: '300' }}>Circuit Composer</h2>
+                  <Button renderIcon={PlayFilledAlt} onClick={handleRun} disabled={isRunning}>
+                    {isRunning ? 'Queued...' : 'Run on Simulator'}
+                  </Button>
+                </Column>
+
+                {/* VISUAL COMPOSER */}
+                <Column lg={12}>
+                  <div style={{ height: '60vh', border: '1px solid #393939', marginBottom: '1rem' }}>
+                    <ReactFlow 
+                      nodes={nodes} edges={edges} 
+                      onNodesChange={onNodesChange} onEdgesChange={onEdgesChange} 
+                      onConnect={onConnect} nodeTypes={nodeTypes} fitView
+                    >
+                      <Background color="#262626" gap={20} />
+                      <Controls />
+                    </ReactFlow>
+                  </div>
+                </Column>
+
+                {/* RESULTS PANEL (Real Data from Engine) */}
+                <Column lg={4}>
+                  <Tile style={{ height: '60vh', background: '#262626' }}>
+                    <h4 style={{ color: 'white', marginBottom: '1rem' }}>Job Results</h4>
+                    {isRunning && <Loading description="Running quantum job..." withOverlay={false} />}
+                    
+                    {result && !isRunning && (
+                      <div style={{ color: '#c6c6c6' }}>
+                        <div style={{ marginBottom: '1rem' }}>
+                          <span style={{ color: '#42be65' }}>● Completed</span>
+                          <p style={{ fontSize: '12px' }}>Backend: Custom-Aer-1</p>
+                        </div>
+                        <p style={{ marginBottom: '0.5rem' }}>Probabilities:</p>
+                        {result.probabilities.map((p, i) => (
+                           p > 0 && (
+                            <div key={i} style={{ marginBottom: '5px' }}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px' }}>
+                                <span>|{i.toString(2).padStart(2, '0')}⟩</span>
+                                <span>{(p * 100).toFixed(1)}%</span>
+                              </div>
+                              <div style={{ width: '100%', height: '4px', background: '#393939' }}>
+                                <div style={{ width: `${p * 100}%`, height: '100%', background: '#0f62fe' }}></div>
+                              </div>
+                            </div>
+                           )
+                        ))}
+                      </div>
+                    )}
+                  </Tile>
+                </Column>
+              </Grid>
+            ) : (
+              // CODE EDITOR VIEW (Monaco)
+              <div style={{ height: '100%' }}>
+                 <Editor 
+                   height="85vh" 
+                   defaultLanguage="python" 
+                   defaultValue="# Qiskit Code (Running on Custom Backend)
+from custom_backend import QuantumCircuit
+
+qc = QuantumCircuit(2)
+qc.h(0)
+qc.cx(0, 1)
+qc.measure_all()
+" 
+                   theme="vs-dark"
+                 />
               </div>
-            </div>
-          </Panel>
-        </ReactFlow>
-      </main>
-
-      <aside style={{ width: '300px', background: theme.sidebar, borderLeft: `1px solid ${theme.border}`, padding: '20px', display: 'flex', flexDirection: 'column' }}>
-        <h2 style={{ fontSize: '11px', color: theme.accent, marginBottom: '15px' }}>SYSTEM TELEMETRY</h2>
-        <div style={{ marginBottom: '20px', borderBottom: '1px solid #1e293b', paddingBottom: '10px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px' }}>
-            <span style={{ color: '#64748b' }}>Gates</span> <span>{nodes.length - 1}</span>
-          </div>
+            )}
+          </main>
         </div>
-        <div style={{ flex: 1, background: '#000', padding: '15px', borderRadius: '6px', fontSize: '11px', color: '#93c5fd', border: '1px solid #1e293b', overflowY: 'auto' }}>
-          <p style={{ color: '#f472b6' }}>import paradox_qc</p>
-          <p>qc = paradox_qc.Circuit({nodes.length})</p>
-          {nodes.slice(1).map((n, i) => ( <p key={i}>qc.gate('{n.data.label}', {i})</p> ))}
-        </div>
-        <button onClick={() => { setIsDeploying(true); setTimeout(() => setIsDeploying(false), 3000); }} style={{ marginTop: '20px', width: '100%', padding: '15px', background: theme.accent, color: '#000', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer' }}>
-          {isDeploying ? 'COMPUTING...' : 'EXECUTE SIMULATION'}
-        </button>
-      </aside>
-    </div>
-  );
-};
-
-export default function App() {
-  return (
-    <ReactFlowProvider>
-      <AlphaParadoxQC />
-    </ReactFlowProvider>
+      </div>
+    </Theme>
   );
 }
