@@ -1,5 +1,9 @@
-/* Import Carbon Design System (Dark Theme g100) */
-@import "https://1.www.s81c.com/common/carbon/web-components/version/v1.21.0/themes/g100.css";
+/* ------------------------------------------------ */
+/* FIX: Import standard Carbon Styles (CDN for speed) */
+/* This matches the class names used by @carbon/react */
+/* ------------------------------------------------ */
+@import "https://unpkg.com/@carbon/styles/css/styles.css";
+@import "https://unpkg.com/@carbon/styles/css/g100.css";
 
 body, #root {
   height: 100vh;
