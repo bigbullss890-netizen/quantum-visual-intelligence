@@ -1,31 +1,29 @@
 import React from 'react';
-import ReactFlow, { Background, Controls } from 'reactflow';
+import ReactFlow, { Background } from 'reactflow';
 import 'reactflow/dist/style.css';
-import { Zap } from 'lucide-react';
-
-const initialNodes = [
-  { 
-    id: '1', 
-    data: { label: 'START HERE' }, 
-    position: { x: 100, y: 100 },
-    style: { background: '#6366f1', color: 'white', padding: '10px', borderRadius: '5px' }
-  }
-];
 
 export default function App() {
+  const initialNodes = [
+    { 
+      id: '1', 
+      data: { label: 'SYSTEM ONLINE' }, 
+      position: { x: 250, y: 150 },
+      style: { background: '#6366f1', color: 'white', padding: '20px', borderRadius: '10px', width: 200, textAlign: 'center' }
+    }
+  ];
+
   return (
-    <div style={{ width: '100vw', height: '100vh', display: 'flex', flexDirection: 'column' }}>
+    <div style={{ width: '100vw', height: '100vh', display: 'flex', flexDirection: 'column', background: '#0f172a' }}>
       
-      {/* HEADER: If you see this, JavaScript is working */}
-      <div style={{ height: '60px', background: '#1e293b', display: 'flex', alignItems: 'center', padding: '0 20px', borderBottom: '1px solid #334155' }}>
-        <Zap color="#6366f1" style={{ marginRight: '10px' }} />
-        <h2 style={{ color: 'white', margin: 0, fontSize: '18px' }}>QUANTUM SYSTEM ACTIVE</h2>
+      {/* Test Header */}
+      <div style={{ padding: '20px', borderBottom: '1px solid #334155', color: 'white', fontWeight: 'bold' }}>
+        REACT IS WORKING - QUANTUM PROTOTYPE
       </div>
 
-      <div style={{ flex: 1, position: 'relative' }}>
+      {/* React Flow Container */}
+      <div style={{ flex: 1, height: '100%' }}>
         <ReactFlow nodes={initialNodes}>
-          <Background color="#334155" gap={20} />
-          <Controls />
+          <Background color="#334155" variant="dots" gap={20} />
         </ReactFlow>
       </div>
     </div>
