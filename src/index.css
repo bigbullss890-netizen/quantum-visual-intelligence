@@ -1,12 +1,20 @@
-html, body, #root {
-  width: 100vw;
-  height: 100vh;
+body, html, #root {
   margin: 0;
   padding: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: #0f172a; /* This is the blue you see */
   overflow: hidden;
-  background-color: #0f172a;
 }
 
-.react-flow__renderer {
-  background-color: #0f172a;
+#root {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Force the React Flow container to be visible */
+.react-flow {
+  background: #0f172a;
+  width: 100% !important;
+  height: 100% !important;
 }
