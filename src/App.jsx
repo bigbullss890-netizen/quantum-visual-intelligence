@@ -10,14 +10,15 @@ import ReactFlow, {
   ReactFlowProvider
 } from 'reactflow';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Beaker, Cpu, Zap, Factory, Play, BarChart3, Activity, Layers, Trash2, RotateCcw } from 'lucide-react';
+import { Beaker, Cpu, Zap, Factory, Play, BarChart3, Activity, Layers, RotateCcw, Shield } from 'lucide-react';
 import 'reactflow/dist/style.css';
 
 const theme = {
   bg: '#020617',
-  sidebar: 'rgba(15, 23, 42, 0.8)',
+  sidebar: 'rgba(15, 23, 42, 0.85)',
   accent: '#2DD4BF',
   border: '#1E293B',
+  neonBlue: '#3B82F6',
 };
 
 const NODE_TYPES = [
@@ -27,7 +28,7 @@ const NODE_TYPES = [
   { id: 'mol', label: 'Target Molecule', color: '#10B981', icon: <Beaker size={14}/> },
 ];
 
-const QuantumArchitect = () => {
+const AlphaParadoxQC = () => {
   const reactFlowWrapper = useRef(null);
   const [nodes, setNodes] = useState([
     { id: 'initial-1', type: 'input', data: { label: 'Quantum Input' }, position: { x: 250, y: 50 }, style: { background: '#2DD4BF', color: '#020617', fontWeight: 'bold', border: 'none', borderRadius: '4px' } },
@@ -38,7 +39,6 @@ const QuantumArchitect = () => {
   
   const { project } = useReactFlow();
 
-  // --- ANIMATION LOGIC ---
   useEffect(() => {
     const interval = setInterval(() => {
       setProbabilities(prev => prev.map(h => 
@@ -50,17 +50,15 @@ const QuantumArchitect = () => {
     return () => clearInterval(interval);
   }, [isDeploying]);
 
-  // --- FLOW HANDLERS ---
   const onNodesChange = useCallback((chs) => setNodes((nds) => applyNodeChanges(chs, nds)), []);
   const onEdgesChange = useCallback((chs) => setEdges((eds) => applyEdgeChanges(chs, eds)), []);
-  const onConnect = useCallback((params) => setEdges((eds) => addEdge({ ...params, animated: true, style: { stroke: '#2DD4BF' } }, eds)), []);
+  const onConnect = useCallback((params) => setEdges((eds) => addEdge({ ...params, animated: true, style: { stroke: theme.accent } }, eds)), []);
 
   const onReset = () => {
-    setNodes([{ id: 'initial-1', type: 'input', data: { label: 'Quantum Input' }, position: { x: 250, y: 50 }, style: { background: '#2DD4BF', color: '#020617', fontWeight: 'bold', border: 'none', borderRadius: '4px' } }]);
+    setNodes([{ id: 'initial-1', type: 'input', data: { label: 'Quantum Input' }, position: { x: 250, y: 50 }, style: { background: theme.accent, color: '#020617', fontWeight: 'bold', border: 'none', borderRadius: '4px' } }]);
     setEdges([]);
   };
 
-  // --- DRAG AND DROP LOGIC ---
   const onDragStart = (event, nodeType, label, color) => {
     event.dataTransfer.setData('application/reactflow', JSON.stringify({ nodeType, label, color }));
     event.dataTransfer.effectAllowed = 'move';
@@ -87,7 +85,7 @@ const QuantumArchitect = () => {
       type: 'default',
       position,
       data: { label: data.label },
-      style: { background: '#0F172A', color: '#fff', border: `1px solid ${data.color}`, borderRadius: '8px', fontSize: '11px', padding: '10px', boxShadow: `0 0 15px ${data.color}22` },
+      style: { background: '#0F172A', color: '#fff', border: `1px solid ${data.color}`, borderRadius: '8px', fontSize: '11px', padding: '10px', boxShadow: `0 0 15px ${data.color}33` },
     };
     setNodes((nds) => nds.concat(newNode));
   }, [project]);
@@ -96,20 +94,22 @@ const QuantumArchitect = () => {
     <div style={{ width: '100vw', height: '100vh', display: 'flex', background: theme.bg, color: '#f8fafc', fontFamily: 'monospace', overflow: 'hidden' }}>
       
       {/* 1. LEFT SIDEBAR */}
-      <aside style={{ width: '280px', background: theme.sidebar, backdropFilter: 'blur(10px)', borderRight: `1px solid ${theme.border}`, padding: '25px', zIndex: 10, display: 'flex', flexDirection: 'column' }}>
+      <aside style={{ width: '280px', background: theme.sidebar, backdropFilter: 'blur(12px)', borderRight: `1px solid ${theme.border}`, padding: '25px', zIndex: 10, display: 'flex', flexDirection: 'column' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '40px' }}>
-          <Zap size={20} color={theme.accent} fill={theme.accent} />
-          <span style={{ fontWeight: 'bold', letterSpacing: '2px', fontSize: '1rem' }}>Q-ARCHITECT</span>
+          <Shield size={24} color={theme.accent} fill={`${theme.accent}33`} />
+          <span style={{ fontWeight: 'bold', letterSpacing: '2px', fontSize: '1rem', color: '#fff' }}>ALPHA PARADOX <span style={{color: theme.accent}}>QC</span></span>
         </div>
         
-        <h2 style={{ fontSize: '10px', color: '#64748b', letterSpacing: '1px', marginBottom: '20px' }}>NODE LIBRARY</h2>
+        <h2 style={{ fontSize: '10px', color: '#64748b', letterSpacing: '1.5px', marginBottom: '20px' }}>MODULE LIBRARY</h2>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
           {NODE_TYPES.map((node) => (
             <div 
               key={node.id}
               draggable
               onDragStart={(e) => onDragStart(e, node.id, node.label, node.color)}
-              style={{ padding: '12px', background: '#1e293b', border: '1px solid #334155', borderRadius: '8px', fontSize: '12px', cursor: 'grab', display: 'flex', alignItems: 'center', gap: '10px' }}
+              style={{ padding: '14px', background: 'rgba(30, 41, 59, 0.5)', border: '1px solid #334155', borderRadius: '8px', fontSize: '12px', cursor: 'grab', display: 'flex', alignItems: 'center', gap: '10px', transition: 'all 0.2s' }}
+              onMouseOver={(e) => e.currentTarget.style.borderColor = node.color}
+              onMouseOut={(e) => e.currentTarget.style.borderColor = '#334155'}
             >
               <div style={{ color: node.color }}>{node.icon}</div>
               {node.label}
@@ -119,9 +119,9 @@ const QuantumArchitect = () => {
 
         <button 
           onClick={onReset}
-          style={{ marginTop: 'auto', display: 'flex', alignItems: 'center', gap: '8px', background: 'transparent', border: '1px solid #334155', color: '#64748b', padding: '12px', borderRadius: '8px', cursor: 'pointer', fontSize: '11px' }}
+          style={{ marginTop: 'auto', display: 'flex', alignItems: 'center', gap: '8px', background: 'transparent', border: '1px solid #334155', color: '#64748b', padding: '12px', borderRadius: '8px', cursor: 'pointer', fontSize: '11px', transition: '0.2s' }}
         >
-          <RotateCcw size={14} /> CLEAR WORKSPACE
+          <RotateCcw size={14} /> RESET LAB ENVIRONMENT
         </button>
       </aside>
 
@@ -130,14 +130,4 @@ const QuantumArchitect = () => {
         <ReactFlow 
           nodes={nodes} edges={edges} 
           onNodesChange={onNodesChange} onEdgesChange={onEdgesChange} 
-          onConnect={onConnect} onDrop={onDrop} onDragOver={onDragOver}
-          fitView deleteKeyCode={["Backspace", "Delete"]}
-        >
-          <Background color="#1e293b" gap={30} size={1} />
-          <Controls />
-          
-          <Panel position="bottom-center" style={{ marginBottom: '30px' }}>
-            <div style={{ background: 'rgba(15, 23, 42, 0.95)', border: `1px solid ${isDeploying ? theme.accent : '#334155'}`, padding: '15px', borderRadius: '12px', width: '400px' }}>
-              <div style={{ height: '60px', display: 'flex', alignItems: 'end', gap: '4px' }}>
-                {probabilities.map((h, i) => (
-                  <div key={i} style={{ flex: 1, height: `${h}%`, background: isDeploying ? theme.accent : `#3b82f6`, borderRadius: '2px 2px 0 0', transition: isDeploying ? 'none' : 'height 0.5
+          onConnect={onConnect} onDrop={onDrop
