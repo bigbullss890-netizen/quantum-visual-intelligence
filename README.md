@@ -1,1 +1,0 @@
-# quantum-visual-intelligence
