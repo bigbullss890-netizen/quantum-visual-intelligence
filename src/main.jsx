@@ -5,12 +5,13 @@ import './index.css'
 import { ClerkProvider } from '@clerk/clerk-react'
 
 // -----------------------------------------------------------
-// 🔴 PASTE YOUR CLERK PUBLISHABLE KEY HERE FROM CLERK.COM
-const PUBLISHABLE_KEY = "pk_test_YOUR_CLERK_PUBLISHABLE_KEY_HERE";
+// 🔒 SECURE KEY IMPORT
+// This looks for VITE_CLERK_PUBLISHABLE_KEY in your .env file
 // -----------------------------------------------------------
+const PUBLISHABLE_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY
 
 if (!PUBLISHABLE_KEY) {
-  throw new Error("Missing Publishable Key")
+  throw new Error("Missing Publishable Key. Please add VITE_CLERK_PUBLISHABLE_KEY to your .env file.")
 }
 
 ReactDOM.createRoot(document.getElementById('root')).render(
