@@ -1,110 +1,129 @@
 import React, { useState, useCallback } from 'react';
-import ReactFlow, { Background, Controls, applyEdgeChanges, applyNodeChanges, addEdge } from 'reactflow';
+import ReactFlow, { Background, Controls, Panel, applyEdgeChanges, applyNodeChanges, addEdge } from 'reactflow';
+import { motion } from 'framer-motion';
+import { Beaker, Cpu, Zap, Factory, Play, ShieldCheck, Code, BarChart3 } from 'lucide-react';
 import 'reactflow/dist/style.css';
-import { Beaker, Cpu, Zap, Factory, Play, ShieldCheck, Activity } from 'lucide-react';
 
-const BLOCKS = [
-  { type: 'molecule', label: 'Target Molecule', icon: <Beaker size={16}/>, color: '#10b981' },
-  { type: 'intelligence', label: 'Intelligence Core', icon: <Cpu size={16}/>, color: '#6366f1' },
-  { type: 'sector', label: 'Sector: Pharma', icon: <Factory size={16}/>, color: '#ec4899' },
-  { type: 'constraint', label: 'Legal Constraint', icon: <ShieldCheck size={16}/>, color: '#f59e0b' },
-];
+// --- THEME CONSTANTS ---
+const theme = {
+  bg: '#020617',
+  sidebar: 'rgba(15, 23, 42, 0.8)',
+  accent: '#2DD4BF',
+  border: '#1E293B',
+};
 
 export default function App() {
   const [nodes, setNodes] = useState([
-    { id: '1', data: { label: 'Quantum Input' }, position: { x: 250, y: 100 }, style: { background: '#6366f1', color: '#fff', borderRadius: '8px', padding: '10px' } }
+    { id: '1', type: 'input', data: { label: 'Quantum Input' }, position: { x: 250, y: 50 }, style: { background: '#2DD4BF', color: '#020617', fontWeight: 'bold', border: 'none' } },
   ]);
   const [edges, setEdges] = useState([]);
-  const [result, setResult] = useState(null);
+  const [isDeploying, setIsDeploying] = useState(false);
 
   const onNodesChange = useCallback((chs) => setNodes((nds) => applyNodeChanges(chs, nds)), []);
   const onEdgesChange = useCallback((chs) => setEdges((eds) => applyEdgeChanges(chs, eds)), []);
-  const onConnect = useCallback((params) => setEdges((eds) => addEdge({ ...params, animated: true, style: { stroke: '#6366f1' } }, eds)), []);
-
-  const runSimulation = () => {
-    // Logic: If Pharma sector node is present, use Hybrid Quantum
-    const isPharma = nodes.some(n => n.data.label.includes('Pharma'));
-    setResult({
-      engine: isPharma ? "Hybrid Quantum-Neural V2" : "Classical AI Cluster",
-      confidence: isPharma ? "98.4%" : "72.1%",
-      qubits: isPharma ? "128 CQ" : "0",
-      cost: isPharma ? "$12.40" : "$0.85"
-    });
-  };
+  const onConnect = useCallback((params) => setEdges((eds) => addEdge({ ...params, animated: true, style: { stroke: '#2DD4BF' } }, eds)), []);
 
   return (
-    <div style={{ width: '100vw', height: '100vh', display: 'flex', flexDirection: 'column', background: '#0f172a', color: 'white', fontFamily: 'sans-serif' }}>
+    <div style={{ width: '100vw', height: '100vh', display: 'flex', background: theme.bg, color: '#f8fafc', fontFamily: 'monospace', overflow: 'hidden' }}>
       
-      {/* HEADER */}
-      <nav style={{ height: '65px', background: '#1e293b', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 25px', borderBottom: '1px solid #334155', zIndex: 10 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <div style={{ background: '#6366f1', padding: '6px', borderRadius: '6px' }}><Zap size={20} fill="white" color="white" /></div>
-          <span style={{ fontWeight: 'bold', fontSize: '1.2rem', letterSpacing: '1px' }}>QUANTUM<span style={{fontWeight: 300, color: '#94a3b8'}}>ARCHITECT</span></span>
+      {/* 1. LEFT SIDEBAR: NODE LIBRARY */}
+      <aside style={{ width: '280px', background: theme.sidebar, backdropFilter: 'blur(10px)', borderRight: `1px solid ${theme.border}`, padding: '25px', zIndex: 10 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '40px' }}>
+          <Zap size={20} color={theme.accent} fill={theme.accent} />
+          <span style={{ fontWeight: 'bold', letterSpacing: '2px', fontSize: '1rem' }}>Q-ARCHITECT</span>
         </div>
-        <button onClick={runSimulation} style={{ background: '#6366f1', color: 'white', border: 'none', padding: '10px 22px', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '10px', boxShadow: '0 4px 14px 0 rgba(99, 102, 241, 0.39)' }}>
-          <Play size={16} fill="white" /> DEPLOY ENGINE
-        </button>
-      </nav>
-
-      <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
-        {/* SIDEBAR */}
-        <div style={{ width: '280px', background: '#1e293b', padding: '25px', borderRight: '1px solid #334155', display: 'flex', flexDirection: 'column', gap: '20px' }}>
-          <div>
-            <p style={{ fontSize: '11px', color: '#94a3b8', fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '15px' }}>Nodes Library</p>
-            {BLOCKS.map(b => (
-              <div key={b.type} style={{ padding: '14px', marginBottom: '12px', background: '#0f172a', borderRadius: '8px', border: `1px solid ${b.color}44`, display: 'flex', alignItems: 'center', gap: '12px', fontSize: '14px', cursor: 'pointer', transition: '0.2s' }}>
-                <span style={{color: b.color}}>{b.icon}</span> {b.label}
-              </div>
-            ))}
-          </div>
-          <div style={{ marginTop: 'auto', padding: '15px', background: '#0f172a', borderRadius: '8px', fontSize: '12px', border: '1px solid #334155' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#10b981', marginBottom: '5px' }}>
-              <Activity size={14} /> System Status: Optimal
-            </div>
-            Ready for Hybrid Synthesis.
-          </div>
+        
+        <h2 style={{ fontSize: '10px', color: '#64748b', letterSpacing: '1px', marginBottom: '20px' }}>NODE LIBRARY</h2>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          {['5-Qubit Gate', 'Add Operator', 'Q-Shaper', 'Target Molecule'].map((item) => (
+            <motion.div 
+              key={item}
+              whileHover={{ scale: 1.02, x: 5 }}
+              style={{ padding: '12px', background: '#1e293b', border: '1px solid #334155', borderRadius: '8px', fontSize: '12px', cursor: 'grab', display: 'flex', alignItems: 'center', gap: '10px' }}
+            >
+              <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: theme.accent }} /> {item}
+            </motion.div>
+          ))}
         </div>
+      </aside>
 
-        {/* WORKSPACE */}
-        <div style={{ flex: 1, position: 'relative' }}>
-          <ReactFlow nodes={nodes} edges={edges} onNodesChange={onNodesChange} onEdgesChange={onEdgesChange} onConnect={onConnect} fitView>
-            <Background color="#334155" gap={25} size={1} />
-            <Controls />
-          </ReactFlow>
-        </div>
-
-        {/* RESULTS PANEL */}
-        {result && (
-          <div style={{ width: '320px', background: '#1e293b', padding: '30px', borderLeft: '2px solid #6366f1', boxShadow: '-10px 0 30px rgba(0,0,0,0.3)', zIndex: 20 }}>
-            <h3 style={{ margin: '0 0 25px 0', color: '#6366f1', fontSize: '1.2rem', display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <Cpu size={20} /> Build Metrics
-            </h3>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '25px' }}>
-              <div>
-                <label style={{ fontSize: '10px', color: '#94a3b8', textTransform: 'uppercase' }}>Intelligence Mode</label>
-                <div style={{ fontSize: '1.1rem', fontWeight: 'bold' }}>{result.engine}</div>
+      {/* 2. MAIN CANVAS */}
+      <main style={{ flex: 1, position: 'relative' }}>
+        <ReactFlow nodes={nodes} edges={edges} onNodesChange={onNodesChange} onEdgesChange={onEdgesChange} onConnect={onConnect} fitView>
+          <Background color="#1e293b" gap={30} size={1} />
+          <Controls />
+          
+          {/* PROBABILITY GRAPH OVERLAY */}
+          <Panel position="bottom-center" style={{ marginBottom: '30px' }}>
+            <div style={{ background: 'rgba(15, 23, 42, 0.9)', border: '1px solid #334155', padding: '15px', borderRadius: '12px', width: '400px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px', fontSize: '10px' }}>
+                <span style={{ color: theme.accent }}>PROBABILITY AMPLITUDE</span>
+                <span style={{ color: '#64748b' }}>|ψ⟩ state</span>
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
-                <div>
-                  <label style={{ fontSize: '10px', color: '#94a3b8', textTransform: 'uppercase' }}>Confidence</label>
-                  <div style={{ fontWeight: 'bold', color: '#10b981' }}>{result.confidence}</div>
-                </div>
-                <div>
-                  <label style={{ fontSize: '10px', color: '#94a3b8', textTransform: 'uppercase' }}>Active Qubits</label>
-                  <div style={{ fontWeight: 'bold' }}>{result.qubits}</div>
-                </div>
-              </div>
-              <div style={{ background: '#0f172a', padding: '15px', borderRadius: '8px' }}>
-                <label style={{ fontSize: '10px', color: '#94a3b8', textTransform: 'uppercase' }}>Est. Compute Cost</label>
-                <div style={{ fontSize: '1.3rem', fontWeight: 'bold', color: '#f59e0b' }}>{result.cost}</div>
+              <div style={{ height: '60px', display: 'flex', alignItems: 'end', gap: '4px' }}>
+                {[60, 40, 90, 30, 70, 20, 50, 85].map((h, i) => (
+                  <motion.div 
+                    key={i}
+                    initial={{ height: 0 }} 
+                    animate={{ height: `${h}%` }} 
+                    style={{ flex: 1, background: `linear-gradient(to top, #3b82f6, ${theme.accent})`, borderRadius: '2px 2px 0 0' }} 
+                  />
+                ))}
               </div>
             </div>
-            <button onClick={() => setResult(null)} style={{ width: '100%', marginTop: '30px', padding: '12px', background: 'transparent', border: '1px solid #475569', color: '#94a3b8', borderRadius: '6px', cursor: 'pointer' }}>
-              Clear Analysis
-            </button>
+          </Panel>
+        </ReactFlow>
+      </main>
+
+      {/* 3. RIGHT SIDEBAR: CODE BAR & METRICS */}
+      <aside style={{ width: '320px', background: theme.sidebar, backdropFilter: 'blur(10px)', borderLeft: `1px solid ${theme.border}`, padding: '25px', display: 'flex', flexDirection: 'column' }}>
+        <div style={{ marginBottom: '30px' }}>
+          <h2 style={{ fontSize: '12px', color: theme.accent, display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '20px' }}>
+            <BarChart3 size={16} /> BUILD METRICS
+          </h2>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+            <Metric label="Confidence" value="98.2%" color={theme.accent} />
+            <Metric label="Qubits" value="5" color="#fff" />
+            <Metric label="Cost" value="$0.12" color="#f59e0b" />
           </div>
-        )}
-      </div>
+        </div>
+
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+          <h3 style={{ fontSize: '10px', color: '#64748b', marginBottom: '10px' }}>KERNEL OUTPUT (QISKIT)</h3>
+          <div style={{ flex: 1, background: '#000', borderRadius: '8px', padding: '15px', fontSize: '11px', color: '#93c5fd', border: '1px solid #1e293b', overflowY: 'auto' }}>
+            <p><span style={{ color: '#f472b6' }}>import</span> qiskit</p>
+            <p style={{ color: theme.accent }}>qc = QuantumCircuit(5)</p>
+            <p>qc.h(0)</p>
+            <p>qc.cx(0, 1)</p>
+            <p>qc.measure_all()</p>
+            <p style={{ color: '#475569', marginTop: '10px' }}>// Executing on ibm_oslo...</p>
+          </div>
+          
+          <button 
+            onClick={() => setIsDeploying(true)}
+            style={{ marginTop: '20px', width: '100%', padding: '15px', background: theme.accent, color: '#020617', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', boxShadow: `0 0 20px ${theme.accent}44` }}
+          >
+            {isDeploying ? 'RUNNING SYSTHESIS...' : 'DEPLOY ENGINE'}
+          </button>
+        </div>
+      </aside>
+
+      {/* SUCCESS NOTIFICATION */}
+      {isDeploying && (
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
+          style={{ position: 'absolute', top: '20px', right: '340px', background: '#10b981', padding: '10px 20px', borderRadius: '8px', fontSize: '12px', fontWeight: 'bold' }}
+        >
+          ✓ QUANTUM KERNEL DEPLOYED
+        </motion.div>
+      )}
     </div>
   );
 }
+
+const Metric = ({ label, value, color }) => (
+  <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #1e293b', paddingBottom: '8px' }}>
+    <span style={{ fontSize: '12px', color: '#94a3b8' }}>{label}</span>
+    <span style={{ fontWeight: 'bold', color: color }}>{value}</span>
+  </div>
+);
