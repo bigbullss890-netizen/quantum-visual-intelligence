@@ -1,24 +1,15 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
-import ReactFlow, { 
-  Background, 
-  Controls, 
-  Panel, 
-  applyEdgeChanges, 
-  applyNodeChanges, 
-  addEdge,
-  useReactFlow,
-  ReactFlowProvider
-} from 'reactflow';
+import ReactFlow, { Background, Controls, Panel, applyEdgeChanges, applyNodeChanges, addEdge, useReactFlow, ReactFlowProvider } from 'reactflow';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Beaker, Cpu, Zap, Factory, Play, BarChart3, Activity, Layers, RotateCcw, Shield } from 'lucide-react';
+import { Beaker, Cpu, Zap, Layers, RotateCcw, Shield, BarChart3, Activity } from 'lucide-react';
 import 'reactflow/dist/style.css';
 
 const theme = {
   bg: '#020617',
-  sidebar: 'rgba(15, 23, 42, 0.85)',
+  sidebar: '#070a13',
   accent: '#2DD4BF',
-  border: '#1E293B',
-  neonBlue: '#3B82F6',
+  card: '#0f172a',
+  border: '#1e293b'
 };
 
 const NODE_TYPES = [
@@ -30,104 +21,94 @@ const NODE_TYPES = [
 
 const AlphaParadoxQC = () => {
   const reactFlowWrapper = useRef(null);
-  const [nodes, setNodes] = useState([
-    { id: 'initial-1', type: 'input', data: { label: 'Quantum Input' }, position: { x: 250, y: 50 }, style: { background: '#2DD4BF', color: '#020617', fontWeight: 'bold', border: 'none', borderRadius: '4px' } },
-  ]);
+  const [nodes, setNodes] = useState([{ id: '1', type: 'input', data: { label: 'Quantum Core' }, position: { x: 250, y: 50 }, style: { background: theme.accent, color: '#000', fontWeight: 'bold', border: 'none' } }]);
   const [edges, setEdges] = useState([]);
   const [isDeploying, setIsDeploying] = useState(false);
-  const [probabilities, setProbabilities] = useState([60, 40, 90, 30, 70, 20, 50, 85]);
-  
+  const [probs, setProbs] = useState([60, 40, 90, 30, 70, 20, 50, 85]);
   const { project } = useReactFlow();
 
   useEffect(() => {
     const interval = setInterval(() => {
-      setProbabilities(prev => prev.map(h => 
-        isDeploying 
-          ? Math.floor(Math.random() * 80) + 10 
-          : Math.max(10, Math.min(100, h + (Math.random() > 0.5 ? 5 : -5)))
-      ));
-    }, isDeploying ? 100 : 500);
+      setProbs(prev => prev.map(() => isDeploying ? Math.random() * 90 + 10 : Math.max(10, Math.min(100, Math.random() * 100))));
+    }, isDeploying ? 100 : 800);
     return () => clearInterval(interval);
   }, [isDeploying]);
 
   const onNodesChange = useCallback((chs) => setNodes((nds) => applyNodeChanges(chs, nds)), []);
   const onEdgesChange = useCallback((chs) => setEdges((eds) => applyEdgeChanges(chs, eds)), []);
-  const onConnect = useCallback((params) => setEdges((eds) => addEdge({ ...params, animated: true, style: { stroke: theme.accent } }, eds)), []);
+  const onConnect = useCallback((p) => setEdges((eds) => addEdge({ ...p, animated: true, style: { stroke: theme.accent } }, eds)), []);
 
-  const onReset = () => {
-    setNodes([{ id: 'initial-1', type: 'input', data: { label: 'Quantum Input' }, position: { x: 250, y: 50 }, style: { background: theme.accent, color: '#020617', fontWeight: 'bold', border: 'none', borderRadius: '4px' } }]);
-    setEdges([]);
-  };
-
-  const onDragStart = (event, nodeType, label, color) => {
-    event.dataTransfer.setData('application/reactflow', JSON.stringify({ nodeType, label, color }));
-    event.dataTransfer.effectAllowed = 'move';
-  };
-
-  const onDragOver = useCallback((event) => {
+  const onDrop = (event) => {
     event.preventDefault();
-    event.dataTransfer.dropEffect = 'move';
-  }, []);
-
-  const onDrop = useCallback((event) => {
-    event.preventDefault();
-    const reactFlowBounds = reactFlowWrapper.current.getBoundingClientRect();
     const data = JSON.parse(event.dataTransfer.getData('application/reactflow'));
-    if (!data.nodeType) return;
-
-    const position = project({
-      x: event.clientX - reactFlowBounds.left,
-      y: event.clientY - reactFlowBounds.top,
-    });
-
+    const bounds = reactFlowWrapper.current.getBoundingClientRect();
+    const position = project({ x: event.clientX - bounds.left, y: event.clientY - bounds.top });
     const newNode = {
-      id: `node_${Math.random()}`,
-      type: 'default',
+      id: Math.random().toString(),
       position,
       data: { label: data.label },
-      style: { background: '#0F172A', color: '#fff', border: `1px solid ${data.color}`, borderRadius: '8px', fontSize: '11px', padding: '10px', boxShadow: `0 0 15px ${data.color}33` },
+      style: { background: '#111827', color: '#fff', border: `1px solid ${data.color}`, borderRadius: '6px', fontSize: '11px', padding: '10px' }
     };
     setNodes((nds) => nds.concat(newNode));
-  }, [project]);
+  };
 
   return (
-    <div style={{ width: '100vw', height: '100vh', display: 'flex', background: theme.bg, color: '#f8fafc', fontFamily: 'monospace', overflow: 'hidden' }}>
-      
-      {/* 1. LEFT SIDEBAR */}
-      <aside style={{ width: '280px', background: theme.sidebar, backdropFilter: 'blur(12px)', borderRight: `1px solid ${theme.border}`, padding: '25px', zIndex: 10, display: 'flex', flexDirection: 'column' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '40px' }}>
-          <Shield size={24} color={theme.accent} fill={`${theme.accent}33`} />
-          <span style={{ fontWeight: 'bold', letterSpacing: '2px', fontSize: '1rem', color: '#fff' }}>ALPHA PARADOX <span style={{color: theme.accent}}>QC</span></span>
+    <div style={{ width: '100vw', height: '100vh', display: 'flex', background: theme.bg, color: '#fff', fontFamily: 'monospace' }}>
+      <aside style={{ width: '260px', background: theme.sidebar, borderRight: `1px solid ${theme.border}`, padding: '20px', display: 'flex', flexDirection: 'column' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '30px' }}>
+          <Shield size={20} color={theme.accent} />
+          <span style={{ fontWeight: 'bold', letterSpacing: '1px' }}>ALPHA PARADOX QC</span>
         </div>
-        
-        <h2 style={{ fontSize: '10px', color: '#64748b', letterSpacing: '1.5px', marginBottom: '20px' }}>MODULE LIBRARY</h2>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-          {NODE_TYPES.map((node) => (
-            <div 
-              key={node.id}
-              draggable
-              onDragStart={(e) => onDragStart(e, node.id, node.label, node.color)}
-              style={{ padding: '14px', background: 'rgba(30, 41, 59, 0.5)', border: '1px solid #334155', borderRadius: '8px', fontSize: '12px', cursor: 'grab', display: 'flex', alignItems: 'center', gap: '10px', transition: 'all 0.2s' }}
-              onMouseOver={(e) => e.currentTarget.style.borderColor = node.color}
-              onMouseOut={(e) => e.currentTarget.style.borderColor = '#334155'}
-            >
-              <div style={{ color: node.color }}>{node.icon}</div>
-              {node.label}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+          {NODE_TYPES.map(n => (
+            <div key={n.id} draggable onDragStart={(e) => e.dataTransfer.setData('application/reactflow', JSON.stringify({ label: n.label, color: n.color }))} style={{ padding: '12px', background: theme.card, border: '1px solid #1e293b', borderRadius: '6px', fontSize: '12px', cursor: 'grab', display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <div style={{ color: n.color }}>{n.icon}</div> {n.label}
             </div>
           ))}
         </div>
-
-        <button 
-          onClick={onReset}
-          style={{ marginTop: 'auto', display: 'flex', alignItems: 'center', gap: '8px', background: 'transparent', border: '1px solid #334155', color: '#64748b', padding: '12px', borderRadius: '8px', cursor: 'pointer', fontSize: '11px', transition: '0.2s' }}
-        >
-          <RotateCcw size={14} /> RESET LAB ENVIRONMENT
+        <button onClick={() => setNodes([{ id: '1', type: 'input', data: { label: 'Quantum Core' }, position: { x: 250, y: 50 }, style: { background: theme.accent, color: '#000', fontWeight: 'bold', border: 'none' } }])} style={{ marginTop: 'auto', background: 'transparent', border: '1px solid #1e293b', color: '#4b5563', padding: '10px', borderRadius: '6px', cursor: 'pointer', fontSize: '10px' }}>
+          <RotateCcw size={12} /> RESET WORKSPACE
         </button>
       </aside>
 
-      {/* 2. MAIN CANVAS */}
       <main ref={reactFlowWrapper} style={{ flex: 1, position: 'relative' }}>
-        <ReactFlow 
-          nodes={nodes} edges={edges} 
-          onNodesChange={onNodesChange} onEdgesChange={onEdgesChange} 
-          onConnect={onConnect} onDrop={onDrop
+        <ReactFlow nodes={nodes} edges={edges} onNodesChange={onNodesChange} onEdgesChange={onEdgesChange} onConnect={onConnect} onDrop={onDrop} onDragOver={(e) => e.preventDefault()} fitView>
+          <Background color="#1e293b" gap={25} />
+          <Controls />
+          <Panel position="bottom-center" style={{ marginBottom: '20px' }}>
+            <div style={{ background: 'rgba(2,6,23,0.8)', border: '1px solid #1e293b', padding: '15px', borderRadius: '12px', width: '350px' }}>
+              <div style={{ height: '50px', display: 'flex', alignItems: 'end', gap: '3px' }}>
+                {probs.map((h, i) => ( <div key={i} style={{ flex: 1, height: `${h}%`, background: isDeploying ? theme.accent : '#3b82f6', borderRadius: '1px', transition: 'height 0.2s' }} /> ))}
+              </div>
+            </div>
+          </Panel>
+        </ReactFlow>
+      </main>
+
+      <aside style={{ width: '300px', background: theme.sidebar, borderLeft: `1px solid ${theme.border}`, padding: '20px', display: 'flex', flexDirection: 'column' }}>
+        <h2 style={{ fontSize: '11px', color: theme.accent, marginBottom: '15px' }}>SYSTEM TELEMETRY</h2>
+        <div style={{ marginBottom: '20px', borderBottom: '1px solid #1e293b', paddingBottom: '10px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px' }}>
+            <span style={{ color: '#64748b' }}>Gates</span> <span>{nodes.length - 1}</span>
+          </div>
+        </div>
+        <div style={{ flex: 1, background: '#000', padding: '15px', borderRadius: '6px', fontSize: '11px', color: '#93c5fd', border: '1px solid #1e293b', overflowY: 'auto' }}>
+          <p style={{ color: '#f472b6' }}>import paradox_qc</p>
+          <p>qc = paradox_qc.Circuit({nodes.length})</p>
+          {nodes.slice(1).map((n, i) => ( <p key={i}>qc.gate('{n.data.label}', {i})</p> ))}
+        </div>
+        <button onClick={() => { setIsDeploying(true); setTimeout(() => setIsDeploying(false), 3000); }} style={{ marginTop: '20px', width: '100%', padding: '15px', background: theme.accent, color: '#000', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer' }}>
+          {isDeploying ? 'COMPUTING...' : 'EXECUTE SIMULATION'}
+        </button>
+      </aside>
+    </div>
+  );
+};
+
+export default function App() {
+  return (
+    <ReactFlowProvider>
+      <AlphaParadoxQC />
+    </ReactFlowProvider>
+  );
+}
