@@ -2,7 +2,7 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { Icons } from '../ui/Icons';
 
-export const AICodePanel = () => (
+export const AICodePanel = ({ code, setCode }) => (
   <aside className="w-96 border-l border-white/10 bg-black/20 backdrop-blur-2xl flex flex-col z-20">
     <div className="p-4 border-b border-white/5 flex justify-between items-center">
       <span className="text-sm font-semibold text-slate-200">Live Kernel</span>
@@ -13,40 +13,34 @@ export const AICodePanel = () => (
       </div>
     </div>
     
-    <div className="flex-1 p-6 font-mono text-xs overflow-auto text-slate-400 leading-relaxed scrollbar-thin">
-       {/* Code Lines */}
-       {[
-         { line: 1, text: "// Qiskit Runtime Initialized", color: "text-slate-600" },
-         { line: 2, html: <><span className="text-purple-400">from</span> qiskit <span className="text-purple-400">import</span> *</> },
-         { line: 3, html: <><span className="text-cyan-400">qc</span> = QuantumCircuit(2)</> },
-         { line: 4, html: <>qc.h(0) <span className="text-slate-600 ml-2"># Hadamard</span></> },
-         { line: 5, html: <>qc.cx(0, 1)</> },
-       ].map((code, i) => (
-         <motion.div 
-           key={i} 
-           initial={{ opacity: 0, x: 10 }}
-           animate={{ opacity: 1, x: 0 }}
-           transition={{ delay: 0.1 * i }}
-           className="flex gap-4 mb-2"
-         >
-            <span className="text-slate-700 select-none w-4 text-right">{code.line}</span>
-            <div className={code.color || "text-slate-300"}>{code.html || code.text}</div>
-         </motion.div>
-       ))}
+    {/* EDITABLE CODE AREA */}
+    <div className="flex-1 relative font-mono text-xs overflow-hidden">
+        {/* Line Numbers (Visual Only) */}
+        <div className="absolute left-0 top-0 bottom-0 w-8 bg-black/10 border-r border-white/5 pt-4 flex flex-col items-center text-slate-700 select-none">
+            {[...Array(50)].map((_, i) => <div key={i} className="h-5 leading-5">{i + 1}</div>)}
+        </div>
+
+        {/* Text Area */}
+        <textarea 
+            value={code}
+            onChange={(e) => setCode(e.target.value)}
+            className="w-full h-full bg-transparent text-slate-300 pl-10 pt-4 pr-4 border-none outline-none resize-none leading-5 font-mono selection:bg-cyan-500/30 placeholder-slate-600"
+            spellCheck="false"
+        />
 
        {/* AI Insight Box (Magic UI Style) */}
        <motion.div 
          initial={{ opacity: 0, y: 10 }}
          animate={{ opacity: 1, y: 0 }}
          transition={{ delay: 1.2 }}
-         className="mt-8 p-4 rounded-xl border border-cyan-500/30 bg-gradient-to-b from-cyan-900/20 to-transparent relative overflow-hidden"
+         className="absolute bottom-4 left-4 right-4 p-4 rounded-xl border border-cyan-500/30 bg-[#020617]/90 backdrop-blur-md relative overflow-hidden pointer-events-none"
        >
           <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-cyan-500 to-transparent opacity-50"></div>
           <div className="flex items-center gap-2 mb-2">
              <Icons.Sparkles />
              <span className="text-cyan-300 font-bold text-xs uppercase tracking-wider">AI Copilot</span>
           </div>
-          <p className="text-cyan-100/70">Entanglement detected between q[0] and q[1]. Recommended: Add a measurement operator to collapse the wavefunction.</p>
+          <p className="text-cyan-100/70">Syntax Verified. Ready for compilation.</p>
        </motion.div>
     </div>
   </aside>
