@@ -1,40 +1,30 @@
-/* ------------------------------------------------ */
-/* FIX: Import standard Carbon Styles (CDN for speed) */
-/* This matches the class names used by @carbon/react */
-/* ------------------------------------------------ */
-@import "https://unpkg.com/@carbon/styles/css/styles.css";
-@import "https://unpkg.com/@carbon/styles/css/g100.css";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
-body, #root {
-  height: 100vh;
-  width: 100vw;
+/* Custom Global Resets */
+:root {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  background-color: #020617; /* Deep Space Black */
+  color: white;
+}
+
+body {
   margin: 0;
-  overflow: hidden;
-  background-color: #161616; /* Carbon Gray 100 */
-  font-family: 'IBM Plex Sans', sans-serif;
+  overflow: hidden; /* Prevents scrollbars on the main window */
 }
 
-/* Carbon Overrides for Full Screen Layout */
-.cds--header {
-  position: static;
+/* Custom Scrollbar for side panels */
+::-webkit-scrollbar {
+  width: 6px;
 }
-
-.cds--content {
-  height: calc(100vh - 48px);
-  padding: 0;
-  overflow: hidden;
+::-webkit-scrollbar-track {
+  background: #0f172a; 
 }
-
-/* React Flow Dark Mode Fixes */
-.react-flow__node {
-  border: none;
+::-webkit-scrollbar-thumb {
+  background: #334155; 
+  border-radius: 4px;
 }
-.react-flow__controls {
-  box-shadow: none;
-  border: 1px solid #393939;
-}
-.react-flow__controls-button {
-  background: #262626;
-  border-bottom: 1px solid #393939;
-  fill: white;
+::-webkit-scrollbar-thumb:hover {
+  background: #475569; 
 }
